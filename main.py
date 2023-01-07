@@ -338,6 +338,8 @@ if __name__ == '__main__':
 	lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
 	labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
 	result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
+	np.savetxt("%s_y_label.txt"%(args.dataset), lossFinal, delimiter='\n', fmt='%.8f')
+	np.savetxt("%s_gt_label.txt"%(args.dataset), labelsFinal, delimiter='\n', fmt='%.8f')
 	result.update(hit_att(loss, labels))
 	result.update(ndcg(loss, labels))
 	print(df)
