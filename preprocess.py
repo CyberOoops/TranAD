@@ -125,16 +125,61 @@ def load_data(dataset):
 		labels = labels.values[::1, 1:]
 		for file in ['train', 'test', 'labels']:
 			np.save(os.path.join(folder, f'{file}.npy'), eval(file).astype('float64'))
+   
 	elif dataset == 'SWaT':
-		dataset_folder = 'data/SWaT'
-		file = os.path.join(dataset_folder, 'series.json')
-		df_train = pd.read_json(file, lines=True)[['val']][3000:6000]
-		df_test  = pd.read_json(file, lines=True)[['val']][7000:12000]
-		train, min_a, max_a = normalize2(df_train.values)
-		test, _, _ = normalize2(df_test.values, min_a, max_a)
-		labels = pd.read_json(file, lines=True)[['noti']][7000:12000] + 0
-		for file in ['train', 'test', 'labels']:
-			np.save(os.path.join(folder, f'{file}.npy'), eval(file))
+		df = pd.read_csv('../../datasets/SWAT/SWaT_Dataset_Normal_v1.csv')
+		df = df.drop(columns=['Unnamed: 0','Unnamed: 52'])
+		traindata = df[1:].to_numpy(dtype=np.float32)[21600:]
+		print("SWAT shape is " + train.shape)
+		epsilo = 0.001
+		data_min = np.min(traindata, axis=0)
+		data_max = np.max(traindata, axis=0)+epsilo
+		for i in range(len(data_max)):
+			if data_max[i] - data_min[i] < 10 * epsilo:
+				data_min[i] = data_max[i]
+				data_max[i] = 1 + data_max[i]
+		train = (traindata - data_min)/(data_max - data_min)
+		# assert train.shape == (496800, 51)
+		# pkl.dump(train, open('SWaT_train.pkl', 'wb'))
+		np.save(os.path.join(folder, f'SWaT_train.npy'), train)
+		print('SWaT_train saved')
+
+		df = pd.read_csv('../datasets/SWAT/SWaT_Dataset_Attack_v0.csv')
+		y = df['Normal/Attack'].to_numpy()
+		df = df.drop(columns=[' Timestamp', 'Normal/Attack'])
+		test = df.to_numpy(dtype=np.float32)
+		test = (test - data_min)/(test - data_min)
+		test = np.clip(test, a_min=-1.0, a_max=3.0)
+		assert test.shape == (449919, 51)
+		# pkl.dump(test, open('SWaT_test.pkl', 'wb'))
+		np.save(os.path.join(folder, f'SWaT_test.npy'), test)
+		print('SWaT_test saved')
+
+		test_label = []
+		for i in y:
+			if i == 'Attack':
+				test_label.append(1)
+			else:
+				test_label.append(0)
+		test_label = np.array(test_label)
+		labels = np.zeros(test.shape)
+		for i in range(len(test_label)):
+			labels[i:i+1, :] = 1
+		assert len(labels) == 449919
+		# pkl.dump(labels, open('SWaT_test_label.pkl', 'wb'))
+		np.save(os.path.join(folder, f'SWaT_labels.npy'), labels)
+		print('SWaT_test_label saved')
+
+
+		# dataset_folder = 'data/SWaT'
+		# file = os.path.join(dataset_folder, 'series.json')
+		# df_train = pd.read_json(file, lines=True)[['val']][3000:6000]
+		# df_test  = pd.read_json(file, lines=True)[['val']][7000:12000]
+		# train, min_a, max_a = normalize2(df_train.values)
+		# test, _, _ = normalize2(df_test.values, min_a, max_a)
+		# labels = pd.read_json(file, lines=True)[['noti']][7000:12000] + 0
+		# for file in ['train', 'test', 'labels']:
+		# 	np.save(os.path.join(folder, f'{file}.npy'), eval(file))
 	elif dataset in ['SMAP', 'MSL']:
 		dataset_folder = 'data/SMAP_MSL'
 		file = os.path.join(dataset_folder, 'labeled_anomalies.csv')
@@ -155,33 +200,94 @@ def load_data(dataset):
 			for i in range(0, len(indices), 2):
 				labels[indices[i]:indices[i+1], :] = 1
 			np.save(f'{folder}/{fn}_labels.npy', labels)
+   
 	elif dataset == 'WADI':
-		dataset_folder = 'data/WADI'
-		ls = pd.read_csv(os.path.join(dataset_folder, 'WADI_attacklabels.csv'))
-		train = pd.read_csv(os.path.join(dataset_folder, 'WADI_14days.csv'), skiprows=1000, nrows=2e5)
-		test = pd.read_csv(os.path.join(dataset_folder, 'WADI_attackdata.csv'))
-		train.dropna(how='all', inplace=True); test.dropna(how='all', inplace=True)
-		train.fillna(0, inplace=True); test.fillna(0, inplace=True)
-		test['Time'] = test['Time'].astype(str)
-		test['Time'] = pd.to_datetime(test['Date'] + ' ' + test['Time'])
-		labels = test.copy(deep = True)
-		for i in test.columns.tolist()[3:]: labels[i] = 0
-		for i in ['Start Time', 'End Time']: 
-			ls[i] = ls[i].astype(str)
-			ls[i] = pd.to_datetime(ls['Date'] + ' ' + ls[i])
-		for index, row in ls.iterrows():
-			to_match = row['Affected'].split(', ')
-			matched = []
-			for i in test.columns.tolist()[3:]:
-				for tm in to_match:
-					if tm in i: 
-						matched.append(i); break			
-			st, et = str(row['Start Time']), str(row['End Time'])
-			labels.loc[(labels['Time'] >= st) & (labels['Time'] <= et), matched] = 1
-		train, test, labels = convertNumpy(train), convertNumpy(test), convertNumpy(labels)
-		print(train.shape, test.shape, labels.shape)
-		for file in ['train', 'test', 'labels']:
-			np.save(os.path.join(folder, f'{file}.npy'), eval(file))
+		a = str(open('../datasets/WADIA2/WADI_14days_new.csv', 'rb').read(), encoding='utf8').split('\n')[5: -1]
+		a = '\n'.join(a)
+		with open('train1.csv', 'wb') as f:
+			f.write(a.encode('utf8'))
+		a = pd.read_csv('train1.csv', header=None)
+		a = a.to_numpy()[:, 3:]
+		nan_cols = []
+		for j in range(a.shape[1]):
+			for i in range(a.shape[0]):
+				if a[i][j] != a[i][j]:
+					nan_cols.append(j)
+					break
+		# len(nan_cols) == 9
+		train = np.delete(a, nan_cols, axis=1)
+		traindata=train.astype(np.float32)[21600:]
+		epsilo = 0.001
+		data_min = np.min(traindata, axis=0)
+		data_max = np.max(traindata, axis=0)+epsilo
+		for i in range(len(data_max)):
+			if data_max[i] - data_min[i] < 10 * epsilo:
+				data_min[i] = data_max[i]
+				data_max[i] = 1 + data_max[i]
+		train = (traindata - data_min)/(data_max - data_min)
+		print("wadi train shape ", train.shape)
+		# assert train.shape == (1209601, 118)
+		# pkl.dump(train, open('WADI_train.pkl', 'wb'))
+		np.save(os.path.join(folder, f'WADI_train.npy'), train)
+		print('WADI_train saved')
+
+		df = pd.read_csv('../datasets/WADIA2/WADI_attackdataLABLE.csv')
+		test = df.to_numpy()[2:, 3:-1]
+		test=test.astype(np.float32)
+		test = np.delete(test, nan_cols, axis=1)
+  
+		test = (test - data_min)/(test - data_min)
+		test = np.clip(test, a_min=-1.0, a_max=2.0)
+		print("wadi test shape ", test.shape)
+		# assert test.shape == (172801, 118)
+		# pkl.dump(test, open('WADI_test.pkl', 'wb'))
+		np.save(os.path.join(folder, f'WADI_test.npy'), test)
+		print('WADI_test saved')
+
+		test_label = df.to_numpy()[2:, -1]
+		test_label=test_label.astype(np.int32)
+		print(test_label.shape)
+		for i in range(len(test_label)):
+			if test_label[i] <= 0:
+				test_label[i] = 1
+			else:
+				test_label[i] = 0
+    
+		labels = np.zeros(test.shape)
+		for i in range(len(test_label)):
+			labels[i:i+1, :] = 1
+		# pkl.dump(test_label, open('WADI_test_label.pkl', 'wb'))
+		np.save(os.path.join(folder, f'WADI_labels.npy'), labels)
+		print('WADI_test_label saved')
+
+
+	# elif dataset == 'WADI':
+	# 	dataset_folder = '../datasets/WADI2'
+	# 	ls = pd.read_csv(os.path.join(dataset_folder, 'WADI_attacklabels.csv'))
+	# 	train = pd.read_csv(os.path.join(dataset_folder, 'WADI_14days_new.csv'), skiprows=21600, nrows=2e5)
+	# 	test = pd.read_csv(os.path.join(dataset_folder, 'WADI_attackdataLABLE.csv'))
+	# 	train.dropna(how='all', inplace=True); test.dropna(how='all', inplace=True)
+	# 	train.fillna(0, inplace=True); test.fillna(0, inplace=True)
+	# 	test['Time'] = test['Time'].astype(str)
+	# 	test['Time'] = pd.to_datetime(test['Date'] + ' ' + test['Time'])
+	# 	labels = test.copy(deep = True)
+	# 	for i in test.columns.tolist()[3:]: labels[i] = 0
+	# 	for i in ['Start Time', 'End Time']: 
+	# 		ls[i] = ls[i].astype(str)
+	# 		ls[i] = pd.to_datetime(ls['Date'] + ' ' + ls[i])
+	# 	for index, row in ls.iterrows():
+	# 		to_match = row['Affected'].split(', ')
+	# 		matched = []
+	# 		for i in test.columns.tolist()[3:]:
+	# 			for tm in to_match:
+	# 				if tm in i: 
+	# 					matched.append(i); break			
+	# 		st, et = str(row['Start Time']), str(row['End Time'])
+	# 		labels.loc[(labels['Time'] >= st) & (labels['Time'] <= et), matched] = 1
+	# 	train, test, labels = convertNumpy(train), convertNumpy(test), convertNumpy(labels)
+	# 	print(train.shape, test.shape, labels.shape)
+	# 	for file in ['train', 'test', 'labels']:
+	# 		np.save(os.path.join(folder, f'{file}.npy'), eval(file))
 	elif dataset == 'MBA':
 		dataset_folder = 'data/MBA'
 		ls = pd.read_excel(os.path.join(dataset_folder, 'labels.xlsx'))
