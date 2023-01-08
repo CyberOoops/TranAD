@@ -113,7 +113,7 @@ if __name__ == "__main__":
             f1_list.append(f1), p_list.append(p), r_list.append(r)
             
         print("==========AVG RESULT=========")
-        print(np.mean(np.asarray(f1_list)), np.mean(np.asarray(p_list)), np.mean(np.asarray(r_list)))
+        print(np.mean(np.asarray(f1_list)), np.mean(np.asarray(p_list)), np.​git log --pretty=oneline --branches -- <file_path>mean(np.asarray(r_list)))
         
             
     else:

@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 processed/
+label_result/
 plots/
 checkpoints/
 data/MSDS/metrics
