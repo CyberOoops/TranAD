@@ -40,6 +40,7 @@ def load_dataset(dataset, machine=None):
 		loader.append(np.load(os.path.join(folder, f'{file}.npy')))
 	# loader = [i[:, debug:debug+1] for i in loader]
 	if args.less: loader[0] = cut_array(0.2, loader[0])
+ 
 	train_loader = DataLoader(loader[0], batch_size=loader[0].shape[0])
 	test_loader = DataLoader(loader[1], batch_size=loader[1].shape[0])
 	labels = loader[2]
@@ -133,6 +134,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			loss = torch.mean(l(ae1s, data), axis=1)
 			return loss.detach().numpy(), y_pred.detach().numpy()
 	elif 'OmniAnomaly' in model.name:
+		data = data.to(device)
 		if training:
 			mses, klds = [], []
 			for i, d in enumerate(data):
@@ -142,7 +144,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 				loss = MSE + model.beta * KLD
 				mses.append(torch.mean(MSE).item()); klds.append(model.beta * torch.mean(KLD).item())
 				optimizer.zero_grad()
-				loss.backward(retain_graph=True)
+				loss.backward()
 				optimizer.step()
 			tqdm.write(f'Epoch {epoch},\tMSE = {np.mean(mses)},\tKLD = {np.mean(klds)}')
 			scheduler.step()
@@ -311,8 +313,6 @@ if __name__ == '__main__':
 	if model.name in ['Attention', 'DAGMM', 'USAD', 'MSCRED', 'CAE_M', 'GDN', 'MTAD_GAT', 'MAD_GAN'] or 'TranAD' in model.name: 
 		trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
 
-	trainD, testD = trainD.to(device), testD.to(device)
-	trainO, testO = trainO.to(device), testO.to(device)
 	### Training phase
 	if not args.test:
 		print(f'{color.HEADER}Training {args.model} on {args.dataset}{color.ENDC}')

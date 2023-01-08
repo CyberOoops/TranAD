@@ -151,6 +151,7 @@ class OmniAnomaly(nn.Module):
 	def forward(self, x, hidden = None):
 		hidden = torch.rand(2, 1, self.n_hidden, dtype=torch.float64).to(device) if hidden is None else hidden
 		out, hidden = self.lstm(x.view(1, 1, -1), hidden)
+		hidden = hidden.data
 		## Encode
 		x = self.encoder(out)
 		mu, logvar = torch.split(x, [self.n_latent, self.n_latent], dim=-1)
