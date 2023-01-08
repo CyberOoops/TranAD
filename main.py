@@ -15,6 +15,9 @@ from time import time
 from pprint import pprint
 # from beepy import beep
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
+
 def convert_to_windows(data, model):
 	windows = []; w_size = model.n_window
 	for i, g in enumerate(data): 
@@ -250,7 +253,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			return loss.detach().numpy(), y_pred.detach().numpy()
 	elif 'TranAD' in model.name:
 		l = nn.MSELoss(reduction = 'none')
-		data_x = torch.DoubleTensor(data); dataset = TensorDataset(data_x, data_x)
+		data_x = torch.DoubleTensor(data).to(device); dataset = TensorDataset(data_x, data_x)
 		bs = model.batch if training else len(data)
 		dataloader = DataLoader(dataset, batch_size = bs)
 		n = epoch + 1; w_size = model.n_window
@@ -278,7 +281,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 				z = model(window, elem)
 				if isinstance(z, tuple): z = z[1]
 			loss = l(z, elem)[0]
-			return loss.detach().numpy(), z.detach().numpy()[0]
+			return loss.cpu().detach().numpy(), z.cpu().detach().numpy()[0]
 	else:
 		y_pred = model(data)
 		loss = l(y_pred, data)
@@ -300,6 +303,7 @@ if __name__ == '__main__':
 	if args.model in ['MERLIN']:
 		eval(f'run_{args.model.lower()}(test_loader, labels, args.dataset)')
 	model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1])
+	model.to(device)
 
 	## Prepare data
 	trainD, testD = next(iter(train_loader)), next(iter(test_loader))
