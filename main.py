@@ -142,7 +142,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 				loss = MSE + model.beta * KLD
 				mses.append(torch.mean(MSE).item()); klds.append(model.beta * torch.mean(KLD).item())
 				optimizer.zero_grad()
-				loss.backward()
+				loss.backward(retain_graph=True)
 				optimizer.step()
 			tqdm.write(f'Epoch {epoch},\tMSE = {np.mean(mses)},\tKLD = {np.mean(klds)}')
 			scheduler.step()
@@ -154,7 +154,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 				y_preds.append(y_pred)
 			y_pred = torch.stack(y_preds)
 			MSE = l(y_pred, data)
-			return MSE.detach().numpy(), y_pred.detach().numpy()
+			return MSE.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	elif 'USAD' in model.name:
 		l = nn.MSELoss(reduction = 'none')
 		n = epoch + 1; w_size = model.n_window
@@ -311,6 +311,8 @@ if __name__ == '__main__':
 	if model.name in ['Attention', 'DAGMM', 'USAD', 'MSCRED', 'CAE_M', 'GDN', 'MTAD_GAT', 'MAD_GAN'] or 'TranAD' in model.name: 
 		trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
 
+	trainD, testD = trainD.to(device), testD.to(device)
+	trainO, testO = trainO.to(device), testO.to(device)
 	### Training phase
 	if not args.test:
 		print(f'{color.HEADER}Training {args.model} on {args.dataset}{color.ENDC}')
@@ -346,16 +348,17 @@ if __name__ == '__main__':
 	labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
 	result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
 	print("pot finished")
-	if not os.path.exists("label_result"):
-		os.makedirs("label_result")
+	base_result_path = "label_result_%s" %args.model
+	if not os.path.exists(base_result_path):
+		os.makedirs(base_result_path)
 	if args.dataset == "SMD":
-		if not os.path.exists("label_result/SMD"):
-			os.makedirs("label_result/SMD")
-		np.savetxt("label_result/SMD/%s_y_label.txt"%(args.machine), lossFinal, delimiter='\n', fmt='%.8f')
-		np.savetxt("label_result/SMD/%s_gt_label.txt"%(args.machine), labelsFinal, delimiter='\n', fmt='%.8f')
+		if not os.path.exists("%s/SMD" %base_result_path):
+			os.makedirs("%s/SMD"%base_result_path)
+		np.savetxt("%s/SMD/%s_y_label.txt"%(base_result_path, args.machine), lossFinal, delimiter='\n', fmt='%.8f')
+		np.savetxt("%s/SMD/%s_gt_label.txt"%(base_result_path, args.machine), labelsFinal, delimiter='\n', fmt='%.8f')
 	else:
-		np.savetxt("label_result/%s_y_label.txt"%(args.dataset), lossFinal, delimiter='\n', fmt='%.8f')
-		np.savetxt("label_result/%s_gt_label.txt"%(args.dataset), labelsFinal, delimiter='\n', fmt='%.8f')
+		np.savetxt("%s/%s_y_label.txt"%(base_result_path, args.dataset), lossFinal, delimiter='\n', fmt='%.8f')
+		np.savetxt("%s/%s_gt_label.txt"%(base_result_path, args.dataset), labelsFinal, delimiter='\n', fmt='%.8f')
 	print(result)
 	# result.update(hit_att(loss, labels))
 	# result.update(ndcg(loss, labels))
