@@ -23,13 +23,13 @@ def convert_to_windows(data, model):
 		windows.append(w if 'TranAD' in args.model or 'Attention' in args.model else w.view(-1))
 	return torch.stack(windows)
 
-def load_dataset(dataset):
+def load_dataset(dataset, machine=None):
 	folder = os.path.join(output_folder, dataset)
 	if not os.path.exists(folder):
 		raise Exception('Processed Data not found.')
 	loader = []
 	for file in ['train', 'test', 'labels']:
-		if dataset == 'SMD': file = 'machine-1-1_' + file
+		if dataset == 'SMD': file = machine + '_' + file
 		if dataset == 'SMAP': file = 'P-1_' + file
 		if dataset == 'MSL': file = 'C-1_' + file
 		if dataset == 'UCR': file = '136_' + file
@@ -293,7 +293,10 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			return loss.detach().numpy(), y_pred.detach().numpy()
 
 if __name__ == '__main__':
-	train_loader, test_loader, labels = load_dataset(args.dataset)
+	if args.dataset == "SMD":
+		train_loader, test_loader, labels = load_dataset(args.dataset, args.machine)
+	else:
+		train_loader, test_loader, labels = load_dataset(args.dataset)
 	if args.model in ['MERLIN']:
 		eval(f'run_{args.model.lower()}(test_loader, labels, args.dataset)')
 	model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1])
@@ -307,7 +310,7 @@ if __name__ == '__main__':
 	### Training phase
 	if not args.test:
 		print(f'{color.HEADER}Training {args.model} on {args.dataset}{color.ENDC}')
-		num_epochs = 5; e = epoch + 1; start = time()
+		num_epochs = 10; e = epoch + 1; start = time()
 		for e in tqdm(list(range(epoch+1, epoch+num_epochs+1))):
 			lossT, lr = backprop(e, model, trainD, trainO, optimizer, scheduler)
 			accuracy_list.append((lossT, lr))
@@ -322,27 +325,37 @@ if __name__ == '__main__':
 	loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
 
 	### Plot curves
-	if not args.test:
-		if 'TranAD' in model.name: testO = torch.roll(testO, 1, 0) 
-		plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
+	# if not args.test:
+	# 	if 'TranAD' in model.name: testO = torch.roll(testO, 1, 0) 
+	# 	plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
 
 	### Scores
 	df = pd.DataFrame()
 	lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
-	for i in range(loss.shape[1]):
-		lt, l, ls = lossT[:, i], loss[:, i], labels[:, i]
-		result, pred = pot_eval(lt, l, ls); preds.append(pred)
-		df = df.append(result, ignore_index=True)
+	# for i in range(loss.shape[1]):
+	# 	lt, l, ls = lossT[:, i], loss[:, i], labels[:, i]
+	# 	result, pred = pot_eval(lt, l, ls); preds.append(pred)
+	# 	df = df.append(result, ignore_index=True)
 	# preds = np.concatenate([i.reshape(-1, 1) + 0 for i in preds], axis=1)
 	# pd.DataFrame(preds, columns=[str(i) for i in range(10)]).to_csv('labels.csv')
 	lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
 	labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
 	result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
-	np.savetxt("%s_y_label.txt"%(args.dataset), lossFinal, delimiter='\n', fmt='%.8f')
-	np.savetxt("%s_gt_label.txt"%(args.dataset), labelsFinal, delimiter='\n', fmt='%.8f')
-	result.update(hit_att(loss, labels))
-	result.update(ndcg(loss, labels))
-	print(df)
-	pprint(result)
+	print("pot finished")
+	if not os.path.exists("label_result"):
+		os.makedirs("label_result")
+	if args.dataset == "SMD":
+		if not os.path.exists("label_result/SMD"):
+			os.makedirs("label_result/SMD")
+		np.savetxt("label_result/SMD/%s_y_label.txt"%(args.machine), lossFinal, delimiter='\n', fmt='%.8f')
+		np.savetxt("label_result/SMD/%s_gt_label.txt"%(args.machine), labelsFinal, delimiter='\n', fmt='%.8f')
+	else:
+		np.savetxt("label_result/%s_y_label.txt"%(args.dataset), lossFinal, delimiter='\n', fmt='%.8f')
+		np.savetxt("label_result/%s_gt_label.txt"%(args.dataset), labelsFinal, delimiter='\n', fmt='%.8f')
+	print(result)
+	# result.update(hit_att(loss, labels))
+	# result.update(ndcg(loss, labels))
+	# print(df)
+	# pprint(result)
 	# pprint(getresults2(df, result))
 	# beep(4)

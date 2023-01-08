@@ -127,10 +127,10 @@ def load_data(dataset):
 			np.save(os.path.join(folder, f'{file}.npy'), eval(file).astype('float64'))
    
 	elif dataset == 'SWaT':
-		df = pd.read_csv('../../datasets/SWAT/SWaT_Dataset_Normal_v1.csv')
+		df = pd.read_csv('../datasets/SWAT/SWaT_Dataset_Normal_v1.csv')
 		df = df.drop(columns=['Unnamed: 0','Unnamed: 52'])
-		traindata = df[1:].to_numpy(dtype=np.float32)[21600:]
-		print("SWAT shape is " + train.shape)
+		traindata = df[1:].to_numpy(dtype=np.float64)[21600:]
+		print("SWAT shape is " , traindata.shape)
 		epsilo = 0.001
 		data_min = np.min(traindata, axis=0)
 		data_max = np.max(traindata, axis=0)+epsilo
@@ -141,18 +141,18 @@ def load_data(dataset):
 		train = (traindata - data_min)/(data_max - data_min)
 		# assert train.shape == (496800, 51)
 		# pkl.dump(train, open('SWaT_train.pkl', 'wb'))
-		np.save(os.path.join(folder, f'SWaT_train.npy'), train)
+		np.save(os.path.join(folder, f'train.npy'), train)
 		print('SWaT_train saved')
 
 		df = pd.read_csv('../datasets/SWAT/SWaT_Dataset_Attack_v0.csv')
 		y = df['Normal/Attack'].to_numpy()
 		df = df.drop(columns=[' Timestamp', 'Normal/Attack'])
-		test = df.to_numpy(dtype=np.float32)
-		test = (test - data_min)/(test - data_min)
+		test = df.to_numpy(dtype=np.float64)
+		test = (test - data_min)/(data_max - data_min)
 		test = np.clip(test, a_min=-1.0, a_max=3.0)
 		assert test.shape == (449919, 51)
 		# pkl.dump(test, open('SWaT_test.pkl', 'wb'))
-		np.save(os.path.join(folder, f'SWaT_test.npy'), test)
+		np.save(os.path.join(folder, f'test.npy'), test)
 		print('SWaT_test saved')
 
 		test_label = []
@@ -164,10 +164,10 @@ def load_data(dataset):
 		test_label = np.array(test_label)
 		labels = np.zeros(test.shape)
 		for i in range(len(test_label)):
-			labels[i:i+1, :] = 1
+			labels[i:i+1, :] = test_label[i]
 		assert len(labels) == 449919
 		# pkl.dump(labels, open('SWaT_test_label.pkl', 'wb'))
-		np.save(os.path.join(folder, f'SWaT_labels.npy'), labels)
+		np.save(os.path.join(folder, f'labels.npy'), labels)
 		print('SWaT_test_label saved')
 
 
@@ -216,7 +216,7 @@ def load_data(dataset):
 					break
 		# len(nan_cols) == 9
 		train = np.delete(a, nan_cols, axis=1)
-		traindata=train.astype(np.float32)[21600:]
+		traindata=train.astype(np.float64)[21600:]
 		epsilo = 0.001
 		data_min = np.min(traindata, axis=0)
 		data_max = np.max(traindata, axis=0)+epsilo
@@ -228,20 +228,20 @@ def load_data(dataset):
 		print("wadi train shape ", train.shape)
 		# assert train.shape == (1209601, 118)
 		# pkl.dump(train, open('WADI_train.pkl', 'wb'))
-		np.save(os.path.join(folder, f'WADI_train.npy'), train)
+		np.save(os.path.join(folder, f'train.npy'), train)
 		print('WADI_train saved')
 
 		df = pd.read_csv('../datasets/WADIA2/WADI_attackdataLABLE.csv')
 		test = df.to_numpy()[2:, 3:-1]
-		test=test.astype(np.float32)
+		test=test.astype(np.float64)
 		test = np.delete(test, nan_cols, axis=1)
   
-		test = (test - data_min)/(test - data_min)
+		test = (test - data_min)/(data_max - data_min)
 		test = np.clip(test, a_min=-1.0, a_max=2.0)
 		print("wadi test shape ", test.shape)
 		# assert test.shape == (172801, 118)
 		# pkl.dump(test, open('WADI_test.pkl', 'wb'))
-		np.save(os.path.join(folder, f'WADI_test.npy'), test)
+		np.save(os.path.join(folder, f'test.npy'), test)
 		print('WADI_test saved')
 
 		test_label = df.to_numpy()[2:, -1]
@@ -255,9 +255,9 @@ def load_data(dataset):
     
 		labels = np.zeros(test.shape)
 		for i in range(len(test_label)):
-			labels[i:i+1, :] = 1
+			labels[i:i+1, :] = test_label[i]
 		# pkl.dump(test_label, open('WADI_test_label.pkl', 'wb'))
-		np.save(os.path.join(folder, f'WADI_labels.npy'), labels)
+		np.save(os.path.join(folder, f'labels.npy'), labels)
 		print('WADI_test_label saved')
 
 
