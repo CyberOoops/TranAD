@@ -69,6 +69,7 @@ def get_best_f1(score, label):
     score = np.asarray(score)
     maxx = float(score.max())
     minn = float(score.min())
+    print("max is %f , min is %f" %(maxx, minn))
     
     grain = 1000
     max_f1 = 0.0
@@ -93,18 +94,20 @@ def get_best_f1(score, label):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--dataset', default="SMD", type=str)
+    parser.add_argument('--model', default="OmniAnomaly", type=str)
     hp = parser.parse_args()
     
     base_path = os.getcwd()
     dataset = hp.dataset
+    model = hp.model
     if dataset == "SMD":
         f1_list = []
         p_list = []
         r_list = []
         SMD_machine = ["machine-1-1","machine-1-2","machine-1-3","machine-1-4","machine-1-5","machine-1-6","machine-1-7","machine-1-8","machine-2-1","machine-2-2","machine-2-3","machine-2-4","machine-2-5","machine-2-6","machine-2-7","machine-2-8","machine-2-9","machine-3-1","machine-3-2","machine-3-3","machine-3-4","machine-3-5","machine-3-6","machine-3-7","machine-3-8","machine-3-9","machine-3-10","machine-3-11"]
         for machine in SMD_machine:
-            gt_path = "label_result/SMD/%s_gt_label.txt" % machine
-            y_path = "label_result/SMD/%s_y_label.txt" % machine
+            gt_path = "label_result_%s/SMD/%s_gt_label.txt" %(model, machine) 
+            y_path = "label_result_%s/SMD/%s_y_label.txt" %(model, machine) 
             
             label = np.genfromtxt(gt_path, delimiter='\n')
             score = np.genfromtxt(y_path, delimiter='\n')
@@ -113,12 +116,12 @@ if __name__ == "__main__":
             f1_list.append(f1), p_list.append(p), r_list.append(r)
             
         print("==========AVG RESULT=========")
-        print(np.mean(np.asarray(f1_list)), np.mean(np.asarray(p_list)), np.​git log --pretty=oneline --branches -- <file_path>mean(np.asarray(r_list)))
+        print(np.mean(np.asarray(f1_list)), np.mean(np.asarray(p_list)), np.mean(np.asarray(r_list)))
         
             
     else:
-        gt_path = "label_result/%s_gt_label.txt" % dataset
-        y_path = "label_result/%s_y_label.txt" % dataset
+        gt_path = "label_result_%s/%s_gt_label.txt" %(model, dataset) 
+        y_path = "label_result_%s/%s_y_label.txt" % (model, dataset)
         
         label = np.genfromtxt(gt_path, delimiter='\n')
         score = np.genfromtxt(y_path, delimiter='\n')

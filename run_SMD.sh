@@ -4,7 +4,7 @@ data_name="machine-1-1 machine-1-2 machine-1-3 machine-1-4 machine-1-5 machine-1
 
 
 for j in ${data_name[@]}; do
-python3 main.py --model 'TranAD' --dataset 'SMD' --machine "${j}" --retrain
+python3 main.py --model 'OmniAnomaly' --dataset 'SMD' --machine "${j}" --retrain
 done;
 
 python3 get_ss.py --dataset SMD
