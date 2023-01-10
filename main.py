@@ -359,10 +359,12 @@ if __name__ == '__main__':
 	else:
 		np.savetxt("%s/%s_y_label.txt"%(base_result_path, args.dataset), lossFinal, delimiter='\n', fmt='%.8f')
 		np.savetxt("%s/%s_gt_label.txt"%(base_result_path, args.dataset), labelsFinal, delimiter='\n', fmt='%.8f')
-	print(result)
-	# result.update(hit_att(loss, labels))
-	# result.update(ndcg(loss, labels))
+	result.update(hit_att(loss, labels))
+	result.update(ndcg(loss, labels))
 	# print(df)
-	# pprint(result)
+	pprint(result)
+	if args.dataset == "SMD":
+		with open("SMD_dig.txt", "a") as f:
+			f.write("%f,%f,%f,%f\n"%(result['Hit@100%'], result['Hit@150%'], result['NDCG@100%'], result['NDCG@150%']))
 	# pprint(getresults2(df, result))
 	# beep(4)
