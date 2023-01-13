@@ -90,7 +90,7 @@ class DAGMM(nn.Module):
 		self.n_feats = feats
 		self.n_hidden = 16
 		self.n_latent = 8
-		self.n_window = 5 # DAGMM w_size = 5
+		self.n_window = 1 # DAGMM w_size = 5
 		self.n = self.n_feats * self.n_window
 		self.n_gmm = self.n_feats * self.n_window
 		self.encoder = nn.Sequential(
@@ -331,7 +331,7 @@ class MAD_GAN(nn.Module):
 		self.lr = 0.0001
 		self.n_feats = feats
 		self.n_hidden = 16
-		self.n_window = 5 # MAD_GAN w_size = 5
+		self.n_window = 10 # MAD_GAN w_size = 5
 		self.n = self.n_feats * self.n_window
 		self.generator = nn.Sequential(
 			nn.Flatten(),

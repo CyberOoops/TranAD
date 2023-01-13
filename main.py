@@ -81,6 +81,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 	l = nn.MSELoss(reduction = 'mean' if training else 'none')
 	feats = dataO.shape[1]
 	if 'DAGMM' in model.name:
+		data = data.to(device)
 		l = nn.MSELoss(reduction = 'none')
 		compute = ComputeLoss(model, 0.1, 0.005, 'cpu', model.n_gmm)
 		n = epoch + 1; w_size = model.n_window
@@ -105,7 +106,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			ae1s = torch.stack(ae1s)
 			y_pred = ae1s[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
 			loss = l(ae1s, data)[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-			return loss.detach().numpy(), y_pred.detach().numpy()
+			return loss.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	if 'Attention' in model.name:
 		l = nn.MSELoss(reduction = 'none')
 		n = epoch + 1; w_size = model.n_window
@@ -132,7 +133,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 				ae1s.append(ae1)
 			ae1s, y_pred = torch.stack(ae1s), torch.stack(y_pred)
 			loss = torch.mean(l(ae1s, data), axis=1)
-			return loss.detach().numpy(), y_pred.detach().numpy()
+			return loss.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	elif 'OmniAnomaly' in model.name:
 		data = data.to(device)
 		if training:
@@ -183,7 +184,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			y_pred = ae1s[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
 			loss = 0.1 * l(ae1s, data) + 0.9 * l(ae2ae1s, data)
 			loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-			return loss.detach().numpy(), y_pred.detach().numpy()
+			return loss.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	elif model.name in ['GDN', 'MTAD_GAT', 'MSCRED', 'CAE_M']:
 		l = nn.MSELoss(reduction = 'none')
 		n = epoch + 1; w_size = model.n_window
@@ -213,13 +214,14 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			y_pred = xs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
 			loss = l(xs, data)
 			loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-			return loss.detach().numpy(), y_pred.detach().numpy()
+			return loss.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	elif 'GAN' in model.name:
+		data = data.to(device)
 		l = nn.MSELoss(reduction = 'none')
 		bcel = nn.BCELoss(reduction = 'mean')
 		msel = nn.MSELoss(reduction = 'mean')
 		real_label, fake_label = torch.tensor([0.9]), torch.tensor([0.1]) # label smoothing
-		real_label, fake_label = real_label.type(torch.DoubleTensor), fake_label.type(torch.DoubleTensor)
+		real_label, fake_label = real_label.type(torch.DoubleTensor).to(device), fake_label.type(torch.DoubleTensor).to(device)
 		n = epoch + 1; w_size = model.n_window
 		mses, gls, dls = [], [], []
 		if training:
@@ -252,7 +254,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			y_pred = outputs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
 			loss = l(outputs, data)
 			loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-			return loss.detach().numpy(), y_pred.detach().numpy()
+			return loss.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	elif 'TranAD' in model.name:
 		l = nn.MSELoss(reduction = 'none')
 		data_x = torch.DoubleTensor(data).to(device); dataset = TensorDataset(data_x, data_x)
@@ -295,7 +297,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			scheduler.step()
 			return loss.item(), optimizer.param_groups[0]['lr']
 		else:
-			return loss.detach().numpy(), y_pred.detach().numpy()
+			return loss.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 
 if __name__ == '__main__':
 	if args.dataset == "SMD":
