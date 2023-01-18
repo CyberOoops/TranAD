@@ -71,7 +71,7 @@ def get_best_f1(score, label):
     minn = float(score.min())
     print("max is %f , min is %f" %(maxx, minn))
     
-    grain = 1000
+    grain = 3000
     max_f1 = 0.0
     max_f1_thres = 0.0
     p = 0

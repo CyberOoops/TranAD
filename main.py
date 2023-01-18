@@ -26,7 +26,7 @@ def convert_to_windows(data, model):
 		windows.append(w if 'TranAD' in args.model or 'Attention' in args.model else w.view(-1))
 	return torch.stack(windows)
 
-def load_dataset(dataset, machine=None):
+def load_dataset(dataset, machine=None, batch=None):
 	folder = os.path.join(output_folder, dataset)
 	if not os.path.exists(folder):
 		raise Exception('Processed Data not found.')
@@ -43,6 +43,8 @@ def load_dataset(dataset, machine=None):
  
 	train_loader = DataLoader(loader[0], batch_size=loader[0].shape[0])
 	test_loader = DataLoader(loader[1], batch_size=loader[1].shape[0])
+	if batch:
+		test_loader = DataLoader(loader[1], batch_size=int(loader[1].shape[0]/2))
 	labels = loader[2]
 	return train_loader, test_loader, labels
 
@@ -159,6 +161,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 			MSE = l(y_pred, data)
 			return MSE.cpu().detach().numpy(), y_pred.cpu().detach().numpy()
 	elif 'USAD' in model.name:
+		data = data.to(device)
 		l = nn.MSELoss(reduction = 'none')
 		n = epoch + 1; w_size = model.n_window
 		l1s, l2s = [], []
@@ -302,6 +305,8 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training = True):
 if __name__ == '__main__':
 	if args.dataset == "SMD":
 		train_loader, test_loader, labels = load_dataset(args.dataset, args.machine)
+	elif args.dataset == "WADI" and args.model == "MAD_GAN":
+		train_loader, test_loader, labels = load_dataset(args.dataset, 1)
 	else:
 		train_loader, test_loader, labels = load_dataset(args.dataset)
 	if args.model in ['MERLIN']:
