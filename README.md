@@ -3,15 +3,20 @@
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fimperial-qore%2FTranAD&count_bg=%23FFC401&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
 # TranAD
+
+A gpu implementation, using SMD, SWaT, WADI
+
+You can directly run model on SMD. First preprocess SMD datasets, then run main.py following below.
+
+rewrite preprocessing for SWaT and WADI. To run TranAD on these two datasets, you need to download the latest dataset from itrust and put it under ../datasets/SWaT or ../datasets/WADI. 
+
 This repository supplements our paper "TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data" accepted in VLDB 2022. This is a refactored version of the code used for results in the paper for ease of use. Follow the below steps to replicate each cell in the results table.
 
-## Results
-![Alt text](results/main.PNG?raw=true "results")
 
 ## Installation
 This code needs Python-3.7 or higher.
 ```bash
-pip3 install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio===0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+torch 1.8.1
 pip3 install -r requirements.txt
 ```
 
