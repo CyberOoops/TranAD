@@ -6,7 +6,7 @@
 
 A gpu implementation, using SMD, SWaT, WADI
 
-You can directly run model on SMD. First preprocess SMD datasets, then run main.py following below.
+You can directly run model on SMD. First preprocess SMD datasets, then run main.py following below. To run all datasets in SMD, a shell script `run_SMD.sh` is provided.
 
 rewrite preprocessing for SWaT and WADI. To run TranAD on these two datasets, you need to download the latest dataset from itrust and put it under ../datasets/SWaT or ../datasets/WADI. 
 
